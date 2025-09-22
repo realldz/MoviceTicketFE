@@ -1,5 +1,5 @@
-import axiosClient from '../../axiosClient';
-import { MovieRequestDto, MovieResponseDto } from '../types';
+import axiosClient from './axiosClient';
+import { MovieRequestDto, MovieResponseDto } from '../types/api';
 
 const movieApi = {
     getAll: (params?: any): Promise<MovieResponseDto[]> => {

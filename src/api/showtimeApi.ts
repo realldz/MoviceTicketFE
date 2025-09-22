@@ -1,5 +1,5 @@
-import axiosClient from '../../axiosClient';
-import { ShowtimeResponseDto, SeatAvailabilityDto } from '../types';
+import axiosClient from './axiosClient';
+import { ShowtimeResponseDto, SeatAvailabilityDto } from '../types/api';
 
 const showtimeApi = {
     getAll: (params?: any): Promise<ShowtimeResponseDto[]> => {
