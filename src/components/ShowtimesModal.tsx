@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { X, Calendar, Clock, MapPin, DollarSign } from 'lucide-react';
-import { Movie, Showtime } from '../types';
+import { Showtime, Theater } from '../types/api';
+import { MovieResponseDto } from '../types/api';
 
 interface ShowtimesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  movies: Movie[];
+  movies: MovieResponseDto[];
   showtimes: Showtime[];
-  onBookTicket: (movie: Movie, showtime: Showtime) => void;
+  onBookTicket: (movie: MovieResponseDto, showtime: Showtime, theater: Theater) => void;
 }
 
 export const ShowtimesModal: React.FC<ShowtimesModalProps> = ({
@@ -21,14 +22,21 @@ export const ShowtimesModal: React.FC<ShowtimesModalProps> = ({
 
   if (!isOpen) return null;
 
-  const dates = [
-    { value: '2025-01-15', label: 'Hôm nay - 15/01' },
-    { value: '2025-01-16', label: 'Ngày mai - 16/01' },
-    { value: '2025-01-17', label: 'Ngày kia - 17/01' }
-  ];
+  const dates = Array.from({ length: 3 }).map((_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    const value = date.toISOString().slice(0, 10);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    let label = '';
+    if (i === 0) label = `Hôm nay - ${day}/${month}`;
+    else if (i === 1) label = `Ngày mai - ${day}/${month}`;
+    else label = `Ngày kia - ${day}/${month}`;
+    return { value, label };
+  });
 
   const filteredShowtimes = showtimes.filter(st => st.date === selectedDate);
-  const moviesWithShowtimes = movies.filter(movie => 
+  const moviesWithShowtimes = movies.filter(movie =>
     filteredShowtimes.some(st => st.movieId === movie.id)
   );
 
@@ -58,11 +66,10 @@ export const ShowtimesModal: React.FC<ShowtimesModalProps> = ({
                   <button
                     key={date.value}
                     onClick={() => setSelectedDate(date.value)}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                      selectedDate === date.value
-                        ? 'bg-red-600 text-white'
-                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    }`}
+                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${selectedDate === date.value
+                      ? 'bg-red-600 text-white'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      }`}
                   >
                     {date.label}
                   </button>
@@ -74,28 +81,29 @@ export const ShowtimesModal: React.FC<ShowtimesModalProps> = ({
             <div className="space-y-8">
               {moviesWithShowtimes.map((movie) => {
                 const movieShowtimes = filteredShowtimes.filter(st => st.movieId === movie.id);
-                
+
                 return (
                   <div key={movie.id} className="bg-gray-800 rounded-lg p-6">
                     <div className="flex flex-col lg:flex-row gap-6">
                       {/* Movie Info */}
                       <div className="flex gap-4">
                         <img
-                          src={movie.poster}
+                          src={movie.posterUrl}
                           alt={movie.title}
                           className="w-24 h-36 object-cover rounded-lg"
                         />
                         <div>
                           <h3 className="text-xl font-bold text-white mb-2">{movie.title}</h3>
                           <div className="flex flex-wrap gap-2 mb-2">
-                            {movie.genre.slice(0, 3).map((genre, index) => (
+                            {/* {movie.genre.slice(0, 3).map((genre, index) => (
                               <span
                                 key={index}
                                 className="bg-gray-700 text-gray-300 px-2 py-1 rounded text-xs"
                               >
                                 {genre}
                               </span>
-                            ))}
+                            ))} */}
+                            {movie.genre}
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-gray-400">
                             <div className="flex items-center space-x-1">
@@ -118,26 +126,26 @@ export const ShowtimesModal: React.FC<ShowtimesModalProps> = ({
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-lg font-bold text-red-400">
-                                  {showtime.time}
+                                  {showtime.startTime}
                                 </span>
                                 <span className="text-green-400 text-sm">
                                   {showtime.availableSeats} ghế trống
                                 </span>
                               </div>
-                              
+
                               <div className="flex items-center justify-between mb-3 text-xs text-gray-400">
                                 <div className="flex items-center space-x-1">
                                   <MapPin className="h-3 w-3" />
-                                  <span>{showtime.theater}</span>
+                                  <span>{showtime.theaterId}</span>
                                 </div>
                                 <div className="flex items-center space-x-1">
                                   <DollarSign className="h-3 w-3" />
-                                  <span>${showtime.price}</span>
+                                  <span>${showtime.ticketPrice}</span>
                                 </div>
                               </div>
 
                               <button
-                                onClick={() => onBookTicket(movie, showtime)}
+                                onClick={() => onBookTicket(movie, showtime, showtime.theaterId)}
                                 disabled={showtime.availableSeats === 0}
                                 className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded text-sm font-semibold transition-colors"
                               >

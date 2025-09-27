@@ -1,17 +1,17 @@
 import React from 'react';
-import { Movie } from '../types';
 import { MovieCard } from './MovieCard';
+import { MovieResponseDto } from '../types/api';
 
 interface MovieSectionProps {
   title: string;
-  movies: Movie[];
-  onMovieClick: (movie: Movie) => void;
+  movies: MovieResponseDto[];
+  onMovieClick: (movie: MovieResponseDto) => void;
 }
 
-export const MovieSection: React.FC<MovieSectionProps> = ({ 
-  title, 
-  movies, 
-  onMovieClick 
+export const MovieSection: React.FC<MovieSectionProps> = ({
+  title,
+  movies,
+  onMovieClick
 }) => {
   if (movies.length === 0) return null;
 

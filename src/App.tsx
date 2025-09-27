@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Movie, Showtime, Booking } from './types';
 import { useMovieData } from './hooks/useMovieData';
 import { Header } from './components/Header';
@@ -12,6 +12,7 @@ import { AccountModal } from './components/AccountModal';
 import { PaymentModal } from './components/PaymentModal';
 import { PromotionsModal } from './components/PromotionsModal';
 import { ShowtimesModal } from './components/ShowtimesModal';
+import { MovieResponseDto, Theater } from './types/api';
 
 function App() {
   const {
@@ -26,18 +27,38 @@ function App() {
     logout,
     topUpBalance,
     deductBalance,
-    getPopularMovies,
+    // getPopularMovies,
     getRecommendedMovies,
     getMovieShowtimes,
-    searchMovies
+    searchMovies,
+    getTheaters
   } = useMovieData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [selectedMovie, setSelectedMovie] = useState<MovieResponseDto | null>(null);
+  const [selectedMovieShowtimes, setSelectedMovieShowtimes] = useState<Showtime[]>([]);
+  const [theaters, setTheaters] = useState<Theater[]>([]);
+
+  useEffect(() => {
+    if (selectedMovie) {
+      getMovieShowtimes(selectedMovie.id).then(setSelectedMovieShowtimes);
+    } else {
+      setSelectedMovieShowtimes([]);
+    }
+  }, [selectedMovie, getMovieShowtimes]);
+
+  useEffect(() => {
+    const fetchTheaters = async () => {
+      const theaters = await getTheaters();
+      setTheaters(theaters);
+    };
+    fetchTheaters();
+  }, []);
   const [bookingData, setBookingData] = useState<{
     movie: Movie;
     showtime: Showtime;
+    theater: Theater;
   } | null>(null);
   const [pendingBooking, setPendingBooking] = useState<Booking | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -45,22 +66,28 @@ function App() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPromotionsModal, setShowPromotionsModal] = useState(false);
   const [showShowtimesModal, setShowShowtimesModal] = useState(false);
+  const [authError, setAuthError] = useState<string | string[] | null>(null);
 
-  const popularMovies = getPopularMovies();
+  const clearAuthError = useCallback(() => {
+    setAuthError(null);
+  }, []);
+
+
+  // const popularMovies = getPopularMovies();
   const recommendedMovies = getRecommendedMovies();
-  const featuredMovie = popularMovies[0] || movies[0];
+  // const featuredMovie = popularMovies[0] || movies[0];
 
   const filteredMovies = searchQuery || selectedGenre
     ? searchMovies(searchQuery, selectedGenre)
     : movies;
 
-  const handleMovieClick = (movie: Movie) => {
+  const handleMovieClick = (movie: MovieResponseDto) => {
     setSelectedMovie(movie);
   };
 
-  const handleBookTicket = (movie: Movie, showtime: Showtime) => {
+  const handleBookTicket = (movie: MovieResponseDto, showtime: Showtime, theater: Theater) => {
     setSelectedMovie(null);
-    setBookingData({ movie, showtime });
+    setBookingData({ movie, showtime, theater });
   };
 
   const handleConfirmBooking = (booking: Booking) => {
@@ -92,14 +119,29 @@ function App() {
     }
   };
 
-  const handleLogin = (email: string, password: string) => {
-    login(email, password);
-    setShowAuthModal(false);
+  const handleLogin = async (email: string, password: string): Promise<boolean> => {
+    const result = await login(email, password);
+    if (result.error) {
+      setAuthError(result.error);
+      return false;
+    } else {
+      setShowAuthModal(false);
+      setAuthError(null); // Clear error on success
+      return true;
+    }
   };
 
-  const handleRegister = (name: string, email: string, password: string) => {
-    register(name, email, password);
-    setShowAuthModal(false);
+  const handleRegister = async (name: string, email: string, password: string): Promise<boolean> => {
+    const result = await register(name, email, password);
+    if (result.error) {
+      setAuthError(result.error);
+      return false;
+    } else {
+      // On successful registration, we won't close the modal immediately.
+      // We will let the AuthModal handle the UI transition.
+      setAuthError(null);
+      return true;
+    }
   };
 
   const handleLogout = () => {
@@ -111,7 +153,7 @@ function App() {
     topUpBalance(amount);
   };
 
-  const handleBookNow = (movie: Movie) => {
+  const handleBookNow = (movie: MovieResponseDto) => {
     if (!currentUser) {
       setShowAuthModal(true);
       return;
@@ -129,7 +171,10 @@ function App() {
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
         user={currentUser}
-        onAuthClick={() => setShowAuthModal(true)}
+        onAuthClick={() => {
+          setAuthError(null); // Clear previous errors
+          setShowAuthModal(true);
+        }}
         onAccountClick={() => setShowAccountModal(true)}
         onShowtimesClick={() => setShowShowtimesModal(true)}
         onPromotionsClick={() => setShowPromotionsModal(true)}
@@ -141,6 +186,8 @@ function App() {
         onClose={() => setShowAuthModal(false)}
         onLogin={handleLogin}
         onRegister={handleRegister}
+        error={authError}
+        clearError={clearAuthError}
       />
 
       {currentUser && (
@@ -177,13 +224,13 @@ function App() {
         showtimes={showtimes}
         onBookTicket={handleBookTicket}
       />
-      {!searchQuery && !selectedGenre && (
+      {/* {!searchQuery && !selectedGenre && (
         <HeroSection
           featuredMovie={featuredMovie}
           onWatchTrailer={handleWatchTrailer}
           onBookNow={handleBookNow}
         />
-      )}
+      )} */}
 
       <div className="container mx-auto px-4 py-12">
         <FilterBar
@@ -193,19 +240,22 @@ function App() {
 
         {!searchQuery && !selectedGenre ? (
           <>
-            <MovieSection
+            {/* <MovieSection
+              key="popular-movies"
               title="🔥 Phim Hot"
               movies={popularMovies}
               onMovieClick={handleMovieClick}
-            />
+            /> */}
 
-            <MovieSection
+            {/* <MovieSection
+              key="recommended-movies"
               title="💡 Đề xuất cho bạn"
               movies={recommendedMovies}
               onMovieClick={handleMovieClick}
-            />
+            /> */}
 
             <MovieSection
+              key="all-movies"
               title="🎬 Tất cả phim"
               movies={movies}
               onMovieClick={handleMovieClick}
@@ -213,6 +263,7 @@ function App() {
           </>
         ) : (
           <MovieSection
+            key="filtered-movies"
             title={
               searchQuery
                 ? `Kết quả tìm kiếm: "${searchQuery}"`
@@ -235,7 +286,8 @@ function App() {
       {selectedMovie && (
         <MovieDetail
           movie={selectedMovie}
-          showtimes={getMovieShowtimes(selectedMovie.id)}
+          theaters={theaters}
+          showtimes={selectedMovieShowtimes}
           onClose={() => setSelectedMovie(null)}
           onBookTicket={handleBookTicket}
         />
@@ -245,6 +297,7 @@ function App() {
         <BookingModal
           movie={bookingData.movie}
           showtime={bookingData.showtime}
+          theater={bookingData.theater}
           onClose={() => setBookingData(null)}
           onConfirmBooking={handleConfirmBooking}
         />

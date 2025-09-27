@@ -22,11 +22,15 @@ export interface Movie {
 export interface Showtime {
     id: string;
     movieId: string;
-    theater: string;
-    time: string;
+    screenId: string;
+    theaterId: string;
+    startTime: string;
+    endTime: string;
     date: string;
-    availableSeats: string[];
-    price: number;
+    ticketPrice: number;
+    availableSeats: number;
+    bookedSeatsList: Array<number>;
+    status: string;
 }
 
 export interface Booking {
@@ -40,10 +44,11 @@ export interface Booking {
 }
 
 export interface User {
-    id: string;
-    name: string;
-    email: string;
-    balance: number;
+    role: string,
+    name: string,
+    email: string,
+    isVerified: boolean,
+    id: string
 }
 
 export interface Promotion {
@@ -65,6 +70,12 @@ export interface LoginRequest {
     twoFactorRecoveryCode?: string | null;
 }
 
+export interface LoginResponse {
+    accessToken: string;
+    refreshToken: string;
+    expires: string;
+    refreshExpires: string;
+}
 export interface RegisterRequestDto {
     name: string;
     email: string;
@@ -73,7 +84,7 @@ export interface RegisterRequestDto {
 
 // Movie
 export interface MovieResponseDto {
-    id?: string;
+    id: string;
     title?: string;
     description?: string;
     duration?: number;
@@ -87,21 +98,21 @@ export interface MovieResponseDto {
     language?: string;
 }
 
-export interface MovieRequestDto extends Omit<MovieResponseDto, 'id'> { }
+export type MovieRequestDto = Omit<MovieResponseDto, 'id'>;
 
 // Showtime
 export interface ShowtimeResponseDto {
-    id?: string;
-    movieId?: string;
-    screenId?: string;
-    theaterId?: string;
-    startTime?: string;
-    endTime?: string;
-    date?: string;
-    ticketPrice?: number;
-    availableSeats?: number;
-    bookedSeats?: string;
-    status?: string;
+    id: string;
+    movieId: string;
+    screenId: string;
+    theaterId: string;
+    startTime: string;
+    endTime: string;
+    date: string;
+    ticketPrice: number;
+    availableSeats: number;
+    bookedSeatsList: Array<number>;
+    status: string;
 }
 
 export interface SeatAvailabilityDto {
@@ -122,4 +133,17 @@ export interface BookingResponseDto {
     paymentStatus?: string;
     bookingStatus?: string;
     bookingReference?: string;
+}
+
+export interface Theater {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    phoneNumber: string;
+    screenCount: number;
+    parkingAvailable: boolean;
+    facilities: string;
 }

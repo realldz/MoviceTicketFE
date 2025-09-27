@@ -34,7 +34,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
   const tabs = [
     { id: 'profile', label: 'Thông tin', icon: User },
-    { id: 'wallet', label: 'Ví tiền', icon: Wallet },
+    // { id: 'wallet', label: 'Ví tiền', icon: Wallet },
     { id: 'history', label: 'Lịch sử', icon: History },
     { id: 'settings', label: 'Cài đặt', icon: Settings }
   ];
@@ -71,11 +71,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                      activeTab === tab.id
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeTab === tab.id
                         ? 'bg-red-600 text-white'
                         : 'text-gray-300 hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     <Icon className="h-5 w-5" />
                     <span>{tab.label}</span>
@@ -177,11 +176,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       <div key={booking.id} className="bg-gray-800 p-4 rounded-lg">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="text-white font-semibold">Booking #{booking.id}</h4>
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            booking.status === 'confirmed' 
-                              ? 'bg-green-600 text-white' 
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${booking.status === 'confirmed'
+                              ? 'bg-green-600 text-white'
                               : 'bg-red-600 text-white'
-                          }`}>
+                            }`}>
                             {booking.status === 'confirmed' ? 'Đã xác nhận' : 'Đã hủy'}
                           </span>
                         </div>

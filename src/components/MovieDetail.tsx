@@ -1,27 +1,57 @@
 import React, { useState } from 'react';
-import { 
-  X, Clock, Star, Calendar, Users, Play, 
+import {
+  X, Clock, Star, Calendar, Users, Play,
   MapPin, DollarSign, Ticket
 } from 'lucide-react';
-import { Movie, Showtime } from '../types';
+import { Showtime, Theater } from '../types/api';
+import { MovieResponseDto } from '../types/api';
 
 interface MovieDetailProps {
-  movie: Movie;
+  movie: MovieResponseDto;
   showtimes: Showtime[];
+  theaters: Theater[];
   onClose: () => void;
-  onBookTicket: (movie: Movie, showtime: Showtime) => void;
+  onBookTicket: (movie: MovieResponseDto, showtime: Showtime, theater: Theater) => void;
 }
 
-export const MovieDetail: React.FC<MovieDetailProps> = ({ 
-  movie, 
-  showtimes, 
-  onClose, 
-  onBookTicket 
-}) => {
-  const [selectedDate, setSelectedDate] = useState('2025-01-15');
+const getYear = (date: string | undefined) => {
+  if (!date) return '';
+  return new Date(date).getFullYear();
+}
 
+const dates = Array.from({ length: 3 }).map((_, i) => {
+  const date = new Date();
+  date.setDate(date.getDate() + i);
+  const value = date.toISOString().slice(0, 10);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  let label = '';
+  if (i === 0) label = `Hôm nay - ${day}/${month}`;
+  else if (i === 1) label = `Ngày mai - ${day}/${month}`;
+  else label = `Ngày kia - ${day}/${month}`;
+  return { value, label };
+});
+
+const getTheaters = (showtimes: Showtime[], theaters: Theater[]) => {
+  const theaterIds = showtimes.map(st => st.theaterId);
+  return theaters.filter(th => theaterIds.includes(th.id));
+}
+export const MovieDetail: React.FC<MovieDetailProps> = ({
+  movie,
+  showtimes,
+  theaters,
+  onClose,
+  onBookTicket
+}) => {
+  const [selectedDate, setSelectedDate] = useState(dates[0].value);
+  const filteredTheaters = getTheaters(showtimes, theaters);
   const filteredShowtimes = showtimes.filter(st => st.date === selectedDate);
 
+  const handleWatchTrailer = () => {
+    if (movie.trailerUrl) {
+      window.open(movie.trailerUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 overflow-y-auto">
       <div className="container mx-auto px-4 py-8">
@@ -30,7 +60,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent z-10" />
             <img
-              src={movie.backdrop}
+              src={movie.posterUrl}
               alt={movie.title}
               className="w-full h-96 object-cover"
             />
@@ -47,7 +77,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({
               {/* Movie Poster */}
               <div className="flex-shrink-0">
                 <img
-                  src={movie.poster}
+                  src={movie.posterUrl}
                   alt={movie.title}
                   className="w-64 h-96 object-cover rounded-lg shadow-2xl mx-auto lg:mx-0"
                 />
@@ -69,24 +99,19 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(movie.releaseDate).getFullYear()}</span>
+                        <span>{getYear(movie.releaseDate)}</span>
                       </div>
                     </div>
                   </div>
-                  {movie.isPopular && (
-                    <div className="bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-bold">
-                      PHIM HOT
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {movie.genre.map((genre, index) => (
+                  {movie.genre?.split(',').map((genre, index) => (
                     <span
                       key={index}
                       className="bg-gray-700 text-gray-300 px-3 py-1 rounded-full text-sm"
                     >
-                      {genre}
+                      {genre.trim()}
                     </span>
                   ))}
                 </div>
@@ -108,12 +133,14 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({
                       <Users className="h-4 w-4 mr-2" />
                       Diễn viên
                     </h3>
-                    <p className="text-gray-300">{movie.cast.join(', ')}</p>
+                    <p className="text-gray-300">{movie.cast}</p>
                   </div>
                 </div>
 
                 {movie.trailerUrl && (
-                  <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 transition-colors mb-8">
+                  <button
+                    onClick={handleWatchTrailer}
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 transition-colors mb-8">
                     <Play className="h-5 w-5" />
                     <span>Xem Trailer</span>
                   </button>
@@ -124,16 +151,18 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({
             {/* Showtimes */}
             <div className="border-t border-gray-700 pt-8">
               <h2 className="text-2xl font-bold mb-6">Lịch Chiếu</h2>
-              
+
               <div className="mb-6">
                 <select
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
-                  <option value="2025-01-15">Hôm nay - 15/01/2025</option>
-                  <option value="2025-01-16">Ngày mai - 16/01/2025</option>
-                  <option value="2025-01-17">Ngày kia - 17/01/2025</option>
+                  {dates.map((date) => (
+                    <option key={date.value} value={date.value}>
+                      {date.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -146,27 +175,34 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({
                     >
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-xl font-bold text-red-400">
-                          {showtime.time}
+                          {showtime.startTime}
                         </span>
                         <div className="flex items-center space-x-1 text-green-400">
                           <Ticket className="h-4 w-4" />
                           <span className="text-sm">{showtime.availableSeats} ghế trống</span>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center justify-between mb-3 text-sm text-gray-400">
                         <div className="flex items-center space-x-1">
                           <MapPin className="h-4 w-4" />
-                          <span>{showtime.theater}</span>
+                          <span>{getTheaters(filteredShowtimes, theaters).find(th => th.id === showtime.theaterId)?.name}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <DollarSign className="h-4 w-4" />
-                          <span>${showtime.price}</span>
+                          <span>{showtime.ticketPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
                         </div>
                       </div>
 
                       <button
-                        onClick={() => onBookTicket(movie, showtime)}
+                        onClick={() => {
+                          const theater = filteredTheaters.find(th => th.id === showtime.theaterId);
+                          if (theater) {
+                            onBookTicket(movie, showtime, theater);
+                          } else {
+                            alert('Không tìm thấy rạp chiếu cho suất này.');
+                          }
+                        }}
                         disabled={showtime.availableSeats === 0}
                         className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg font-semibold transition-colors"
                       >

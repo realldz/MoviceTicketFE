@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Film, Search, User, Menu, X, Wallet } from 'lucide-react';
-import { User as UserType } from '../types';
+import { User as UserType } from '../types/api';
 
 interface HeaderProps {
   onSearch: (query: string) => void;
@@ -12,11 +12,11 @@ interface HeaderProps {
   onPromotionsClick: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ 
-  onSearch, 
-  searchQuery, 
-  user, 
-  onAuthClick, 
+export const Header: React.FC<HeaderProps> = ({
+  onSearch,
+  searchQuery,
+  user,
+  onAuthClick,
   onAccountClick,
   onShowtimesClick,
   onPromotionsClick
@@ -51,31 +51,31 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <button 
+            {/* <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="hover:text-red-400 transition-colors"
             >
               Phim Hot
-            </button>
-            <button 
+            </button> */}
+            <button
               onClick={onShowtimesClick}
               className="hover:text-red-400 transition-colors"
             >
               Lịch Chiếu
             </button>
-            <button 
+            {/* <button 
               onClick={onPromotionsClick}
               className="hover:text-red-400 transition-colors"
             >
               Khuyến Mãi
-            </button>
-            
+            </button> */}
+
             {user ? (
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 bg-gray-800 px-3 py-2 rounded-lg">
+                {/* <div className="flex items-center space-x-2 bg-gray-800 px-3 py-2 rounded-lg">
                   <Wallet className="h-4 w-4 text-green-400" />
                   <span className="text-green-400 font-semibold">${user.balance.toFixed(2)}</span>
-                </div>
+                </div> */}
                 <button
                   onClick={onAccountClick}
                   className="flex items-center space-x-2 bg-gray-800 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors"
@@ -121,30 +121,30 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Mobile Menu */}
         {isMenuOpen && (
           <nav className="md:hidden mt-4 space-y-2">
-            <button 
+            {/* <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="block py-2 hover:text-red-400 transition-colors w-full text-left"
             >
               Phim Hot
-            </button>
-            <button 
+            </button> */}
+            <button
               onClick={onShowtimesClick}
               className="block py-2 hover:text-red-400 transition-colors w-full text-left"
             >
               Lịch Chiếu
             </button>
-            <button 
+            {/* <button
               onClick={onPromotionsClick}
               className="block py-2 hover:text-red-400 transition-colors w-full text-left"
             >
               Khuyến Mãi
-            </button>
+            </button> */}
             {user ? (
               <>
-                <div className="py-2 text-green-400 font-semibold">
+                {/* <div className="py-2 text-green-400 font-semibold">
                   Số dư: ${user.balance.toFixed(2)}
-                </div>
-                <button 
+                </div> */}
+                <button
                   onClick={onAccountClick}
                   className="block py-2 hover:text-red-400 transition-colors w-full text-left"
                 >
@@ -152,7 +152,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </>
             ) : (
-              <button 
+              <button
                 onClick={onAuthClick}
                 className="block py-2 hover:text-red-400 transition-colors w-full text-left"
               >

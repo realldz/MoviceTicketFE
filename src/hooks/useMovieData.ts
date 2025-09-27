@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Movie, Showtime, Booking, User, Promotion } from '../types';
-import { movies as movieData, showtimes as showtimeData } from '../data/movies';
+import { useState, useEffect, useCallback } from 'react';
+import { Showtime, Booking, User, Promotion, Theater } from '../types/api';
 import { promotions as promotionData } from '../data/promotions';
+import { authApi, movieApi, showtimeApi } from '../api';
+import { MovieResponseDto } from '../types/api';
+import userApi from '../api/userApi';
+import theaterApi from '../api/theaterApi';
 
 export const useMovieData = () => {
-  const [movies, setMovies] = useState<Movie[]>(movieData);
-  const [showtimes, setShowtimes] = useState<Showtime[]>(showtimeData);
+  const [movies, setMovies] = useState<MovieResponseDto[]>([]);
+  const [showtimes, setShowtimes] = useState<Showtime[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>(promotionData);
@@ -22,36 +25,63 @@ export const useMovieData = () => {
     if (savedUser) {
       setCurrentUser(JSON.parse(savedUser));
     }
+    async function getMovie() {
+      setMovies(await movieApi.getAll());
+    }
+    getMovie();
   }, []);
 
-  const login = (email: string, password: string) => {
-    // Simple authentication simulation
-    const user: User = {
-      id: Date.now().toString(),
-      email,
-      name: email.split('@')[0],
-      balance: 100.0, // Starting balance
-      bookingHistory: []
-    };
-    setCurrentUser(user);
-    localStorage.setItem('currentUser', JSON.stringify(user));
+  const login = async (email: string, password: string): Promise<{ error: string | null }> => {
+    try {
+      const response = await authApi.login({ email, password });
+      localStorage.setItem('accessToken', response.accessToken);
+      await getMe();
+      return { error: null };
+    } catch (error: any) {
+      // Safely access the error message and provide fallbacks
+      const errorMessage =
+        error?.response?.data?.message ||
+        'Đăng nhập thất bại. Vui lòng thử lại.';
+      return { error: errorMessage };
+    }
   };
 
-  const register = (name: string, email: string, password: string) => {
-    const user: User = {
-      id: Date.now().toString(),
-      email,
-      name,
-      balance: 50.0, // Welcome bonus
-      bookingHistory: []
-    };
-    setCurrentUser(user);
-    localStorage.setItem('currentUser', JSON.stringify(user));
+  const register = async (name: string, email: string, password: string): Promise<{ error: string | Array<string> | null }> => {
+    try {
+      await authApi.register({
+        name,
+        email,
+        password
+      });
+      return { error: null };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response = err.response as { status: number; data?: { errors?: any } };
+      if (response && response.status === 400 && response.data && response.data.errors) {
+        const errors = response.data.errors;
+        return { error: Object.values(errors).flat() as Array<string> };
+      } else if (response && response.status === 409) {
+        return { error: 'Email đã được sử dụng.' };
+      } else {
+        return { error: 'Đã xảy ra lỗi không xác định.' };
+      }
+    }
+    // setCurrentUser(user);
+    // localStorage.setItem('currentUser', JSON.stringify(user));
+  };
+
+  const getMe = async (): Promise<User> => {
+    const response = await userApi.getMe();
+    setCurrentUser(response);
+    localStorage.setItem('currentUser', JSON.stringify(response));
+    return response;
   };
 
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('accessToken');
   };
 
   const topUpBalance = (amount: number) => {
@@ -76,18 +106,18 @@ export const useMovieData = () => {
     const newBookings = [...bookings, booking];
     setBookings(newBookings);
     localStorage.setItem('movieBookings', JSON.stringify(newBookings));
-    
+
     // Update showtime availability
-    setShowtimes(prev => prev.map(showtime => 
+    setShowtimes(prev => prev.map(showtime =>
       showtime.id === booking.showtimeId
         ? { ...showtime, availableSeats: showtime.availableSeats - booking.seats.length }
         : showtime
     ));
   };
 
-  const getPopularMovies = () => {
-    return movies.filter(movie => movie.isPopular);
-  };
+  // const getPopularMovies = () => {
+  //   return movies.filter(movie => movie.isPopular);
+  // };
 
   const getRecommendedMovies = () => {
     if (!currentUser || bookings.length === 0) {
@@ -95,38 +125,48 @@ export const useMovieData = () => {
     }
 
     // Simple recommendation based on genres of previously booked movies
-    const bookedMovies = bookings.map(booking => 
+    const bookedMovies = bookings.map(booking =>
       movies.find(movie => movie.id === booking.movieId)
-    ).filter(Boolean) as Movie[];
+    ).filter(Boolean) as MovieResponseDto[];
 
-    const likedGenres = bookedMovies.flatMap(movie => movie.genre);
+    const likedGenres = bookedMovies.flatMap(movie => movie.genre || []);
     const genreCount = likedGenres.reduce((acc, genre) => {
       acc[genre] = (acc[genre] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
     const topGenres = Object.entries(genreCount)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 3)
       .map(([genre]) => genre);
 
     return movies
       .filter(movie => !bookedMovies.some(booked => booked.id === movie.id))
-      .filter(movie => movie.genre.some(genre => topGenres.includes(genre)))
+      .filter(movie => movie.genre && topGenres.some(genre => movie.genre?.includes(genre)))
       .slice(0, 6);
   };
 
-  const getMovieShowtimes = (movieId: string) => {
-    return showtimes.filter(showtime => showtime.movieId === movieId);
-  };
+  const getMovieShowtimes = useCallback(async (movieId: string | null): Promise<Showtime[]> => {
+    const response = await showtimeApi.getByMovieId(movieId || '');
+    response.forEach(showtime => {
+      showtime.date = showtime.date.slice(0, 10); // Chuyển thành 'YYYY-MM-DD'
+      showtime.startTime = showtime.startTime.slice(11, 16); // Chuyển thành 'HH:MM'
+    });
+    return response;
+  }, []);
 
   const searchMovies = (query: string, genre?: string) => {
     return movies.filter(movie => {
-      const matchesSearch = movie.title.toLowerCase().includes(query.toLowerCase()) ||
-                           movie.description.toLowerCase().includes(query.toLowerCase());
-      const matchesGenre = !genre || movie.genre.includes(genre);
+      const matchesSearch = movie.title?.toLowerCase().includes(query.toLowerCase()) ||
+        movie.description?.toLowerCase().includes(query.toLowerCase());
+      const matchesGenre = !genre || movie.genre?.includes(genre);
       return matchesSearch && matchesGenre;
     });
+  };
+
+  const getTheaters = async (): Promise<Theater[]> => {
+    const response = await theaterApi.getAll();
+    return response;
   };
 
   return {
@@ -141,9 +181,10 @@ export const useMovieData = () => {
     logout,
     topUpBalance,
     deductBalance,
-    getPopularMovies,
+    // getPopularMovies,
     getRecommendedMovies,
     getMovieShowtimes,
-    searchMovies
+    searchMovies,
+    getTheaters
   };
 };

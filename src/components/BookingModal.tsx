@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { X, User, Mail, Phone } from 'lucide-react';
-import { Movie, Showtime, Seat, Booking } from '../types';
+import { Movie, Showtime, Booking } from '../types/api';
+import { Theater } from '../types/api';
+import { Seat } from '../types';
 
 interface BookingModalProps {
   movie: Movie;
+  theater: Theater;
   showtime: Showtime;
   onClose: () => void;
   onConfirmBooking: (booking: Booking) => void;
@@ -12,6 +15,7 @@ interface BookingModalProps {
 export const BookingModal: React.FC<BookingModalProps> = ({
   movie,
   showtime,
+  theater,
   onClose,
   onConfirmBooking
 }) => {
@@ -26,13 +30,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const generateSeats = (): Seat[] => {
     const seats: Seat[] = [];
     const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-    
+
     rows.forEach((row, rowIndex) => {
       for (let seatNum = 1; seatNum <= 15; seatNum++) {
         const seatId = `${row}${seatNum}`;
         const isAvailable = Math.random() > 0.3; // 70% seats available
         const type = rowIndex < 2 ? 'premium' : rowIndex > 5 ? 'vip' : 'regular';
-        
+
         seats.push({
           id: seatId,
           row,
@@ -43,22 +47,22 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         });
       }
     });
-    
+
     return seats;
   };
 
   const seats = generateSeats();
 
   const toggleSeat = (seatId: string) => {
-    setSelectedSeats(prev => 
-      prev.includes(seatId) 
+    setSelectedSeats(prev =>
+      prev.includes(seatId)
         ? prev.filter(id => id !== seatId)
         : [...prev, seatId]
     );
   };
 
   const getSeatPrice = (type: string) => {
-    const basePrice = showtime.price;
+    const basePrice = showtime.ticketPrice;
     switch (type) {
       case 'premium': return basePrice * 1.5;
       case 'vip': return basePrice * 2;
@@ -99,7 +103,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             <div>
               <h2 className="text-2xl font-bold text-white">{movie.title}</h2>
               <p className="text-gray-300">
-                {showtime.theater} - {showtime.time} - {showtime.date}
+                {theater.name} - {showtime.startTime} - {showtime.date}
               </p>
             </div>
             <button
@@ -128,8 +132,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     disabled={!seat.isAvailable}
                     className={`
                       w-8 h-8 rounded text-xs font-bold border-2 transition-all
-                      ${seat.isSelected 
-                        ? 'bg-red-500 border-red-400 text-white' 
+                      ${seat.isSelected
+                        ? 'bg-red-500 border-red-400 text-white'
                         : seat.isAvailable
                           ? seat.type === 'premium'
                             ? 'bg-yellow-600 border-yellow-500 hover:bg-yellow-500 text-white'
@@ -144,7 +148,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   </button>
                 ))}
               </div>
-              
+
               {/* Legend */}
               <div className="flex justify-center space-x-6 mt-6 text-sm">
                 <div className="flex items-center space-x-2">
@@ -173,7 +177,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             {/* Customer Info & Summary */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Customer Info */}
-              <div>
+              {/* <div>
                 <h3 className="text-xl font-bold text-white mb-4">Thông tin khách hàng</h3>
                 <div className="space-y-4">
                   <div>
@@ -216,7 +220,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     />
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Booking Summary */}
               <div>
@@ -228,11 +232,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   </div>
                   <div className="flex justify-between text-gray-300">
                     <span>Rạp:</span>
-                    <span className="text-white">{showtime.theater}</span>
+                    <span className="text-white">{theater.name}</span>
                   </div>
                   <div className="flex justify-between text-gray-300">
                     <span>Suất chiếu:</span>
-                    <span className="text-white">{showtime.time} - {showtime.date}</span>
+                    <span className="text-white">{showtime.startTime} - {showtime.date}</span>
                   </div>
                   <div className="flex justify-between text-gray-300">
                     <span>Ghế đã chọn:</span>

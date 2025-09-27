@@ -1,10 +1,10 @@
 import axiosClient from './axiosClient';
 
 // Các kiểu dữ liệu này sẽ được định nghĩa trong src/types.ts
-import { LoginRequest, RegisterRequestDto } from '../types/api';
+import { LoginRequest, LoginResponse, RegisterRequestDto } from '../types/api';
 
 const authApi = {
-    login: (data: LoginRequest) => {
+    login: (data: LoginRequest): Promise<LoginResponse> => {
         const url = '/Authorization/login';
         return axiosClient.post(url, data);
     },

@@ -2,6 +2,7 @@ import axiosClient from './axiosClient';
 import { MovieRequestDto, MovieResponseDto } from '../types/api';
 
 const movieApi = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getAll: (params?: any): Promise<MovieResponseDto[]> => {
         const url = '/Movie';
         return axiosClient.get(url, { params });
@@ -12,6 +13,7 @@ const movieApi = {
         return axiosClient.get(url);
     },
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     search: (params: any): Promise<MovieResponseDto[]> => {
         const url = '/Movie/search';
         return axiosClient.get(url, { params });
