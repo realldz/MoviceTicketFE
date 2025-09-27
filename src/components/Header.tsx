@@ -57,12 +57,12 @@ export const Header: React.FC<HeaderProps> = ({
             >
               Phim Hot
             </button> */}
-            <button
+            {/* <button
               onClick={onShowtimesClick}
               className="hover:text-red-400 transition-colors"
             >
               Lịch Chiếu
-            </button>
+            </button> */}
             {/* <button 
               onClick={onPromotionsClick}
               className="hover:text-red-400 transition-colors"
