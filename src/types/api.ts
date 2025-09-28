@@ -35,12 +35,14 @@ export interface Showtime {
 
 export interface Booking {
     id: string;
-    userEmail: string;
+    userId: string;
     showtimeId: string;
-    seats: string[];
-    totalPrice: number;
+    seatNumbers: string[];
     bookingDate: string;
-    status: 'confirmed' | 'cancelled';
+    totalAmount: number;
+    paymentStatus: string;
+    bookingStatus: string;
+    bookingReference?: string;
 }
 
 export interface User {

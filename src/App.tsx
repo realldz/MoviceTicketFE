@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Movie, Showtime, Booking } from './types';
+import { Movie, Showtime, Booking } from './types/api';
 import { useMovieData } from './hooks/useMovieData';
 import { Header } from './components/Header';
-import { HeroSection } from './components/HeroSection';
 import { MovieSection } from './components/MovieSection';
 import { FilterBar } from './components/FilterBar';
 import { MovieDetail } from './components/MovieDetail';
@@ -13,6 +12,7 @@ import { PaymentModal } from './components/PaymentModal';
 import { PromotionsModal } from './components/PromotionsModal';
 import { ShowtimesModal } from './components/ShowtimesModal';
 import { MovieResponseDto, Theater } from './types/api';
+import { X } from 'lucide-react';
 
 function App() {
   const {
@@ -54,6 +54,7 @@ function App() {
       setTheaters(theaters);
     };
     fetchTheaters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [bookingData, setBookingData] = useState<{
     movie: Movie;
@@ -67,6 +68,25 @@ function App() {
   const [showPromotionsModal, setShowPromotionsModal] = useState(false);
   const [showShowtimesModal, setShowShowtimesModal] = useState(false);
   const [authError, setAuthError] = useState<string | string[] | null>(null);
+  const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const vnp_ResponseCode = urlParams.get('vnp_ResponseCode');
+    const vnp_TxnRef = urlParams.get('vnp_TxnRef');
+
+    if (vnp_ResponseCode === '00' && vnp_TxnRef) {
+      const storedBooking = localStorage.getItem(`booking-${vnp_TxnRef}`);
+      if (storedBooking) {
+        const booking = JSON.parse(storedBooking) as Booking;
+        addBooking(booking);
+        setSuccessfulBooking(booking);
+        localStorage.removeItem(`booking-${vnp_TxnRef}`);
+        // Clean up the URL
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    }
+  }, [addBooking]);
 
   const clearAuthError = useCallback(() => {
     setAuthError(null);
@@ -74,7 +94,7 @@ function App() {
 
 
   // const popularMovies = getPopularMovies();
-  const recommendedMovies = getRecommendedMovies();
+  // const recommendedMovies = getRecommendedMovies();
   // const featuredMovie = popularMovies[0] || movies[0];
 
   const filteredMovies = searchQuery || selectedGenre
@@ -96,7 +116,6 @@ function App() {
       setShowAuthModal(true);
       return;
     }
-
     setPendingBooking(booking);
     setBookingData(null);
     setShowPaymentModal(true);
@@ -105,7 +124,7 @@ function App() {
   const handlePaymentSuccess = (paymentMethod: string) => {
     if (pendingBooking) {
       if (paymentMethod === 'wallet') {
-        const success = deductBalance(pendingBooking.totalPrice);
+        const success = deductBalance(pendingBooking.totalAmount);
         if (!success) {
           alert('Số dư không đủ!');
           return;
@@ -115,7 +134,7 @@ function App() {
       addBooking(pendingBooking);
       setPendingBooking(null);
       setShowPaymentModal(false);
-      alert('Đặt vé thành công! Vui lòng kiểm tra email để nhận thông tin vé.');
+      // alert('Đặt vé thành công! Vui lòng kiểm tra email để nhận thông tin vé.');
     }
   };
 
@@ -195,7 +214,7 @@ function App() {
           isOpen={showAccountModal}
           onClose={() => setShowAccountModal(false)}
           user={currentUser}
-          bookings={bookings.filter(b => b.userEmail === currentUser.email)}
+          bookings={bookings.filter(b => b.userId === currentUser.id)}
           onTopUp={handleTopUp}
           onLogout={handleLogout}
         />
@@ -297,11 +316,67 @@ function App() {
         <BookingModal
           movie={bookingData.movie}
           showtime={bookingData.showtime}
+          user={currentUser}
           theater={bookingData.theater}
           onClose={() => setBookingData(null)}
           onConfirmBooking={handleConfirmBooking}
         />
       )}
+
+      {successfulBooking && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="bg-gray-800 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                Thanh toán thành công
+              </h2>
+              <button
+                onClick={() => setSuccessfulBooking(null)}
+                className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 text-white">
+              <p className="text-center text-lg mb-6">Cảm ơn bạn đã đặt vé!</p>
+              <div className="space-y-4 bg-gray-800 p-4 rounded-lg">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-400">Mã vé:</span>
+                  <span className="font-bold text-red-500">{`#${successfulBooking.id}`}</span>
+                </div>
+                {/* <div className="flex justify-between">
+                  <span className="font-semibold text-gray-400">Phim:</span>
+                  <span className="font-bold">{successfulBooking.movieTitle}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-400">Rạp:</span>
+                  <span>{successfulBooking.theaterName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-400">Suất chiếu:</span>
+                  <span>{`${new Date(successfulBooking.showtime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(successfulBooking.showtime).toLocaleDateString()}`}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-400">Ghế:</span>
+                  <span>{successfulBooking.seats.join(', ')}</span>
+                </div> */}
+                <div className="border-t border-gray-700 my-4"></div>
+                <div className="flex justify-between text-xl">
+                  <span className="font-semibold text-gray-400">Tổng cộng:</span>
+                  <span className="font-bold text-red-500">
+                    {successfulBooking.totalAmount.toLocaleString('vi-VN')} $
+                  </span>
+                </div>
+              </div>
+              <p className="text-center text-sm text-gray-500 mt-6">
+                Thông tin chi tiết đã được gửi đến email của bạn.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

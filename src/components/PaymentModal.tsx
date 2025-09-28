@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, CreditCard, Smartphone, QrCode, CheckCircle } from 'lucide-react';
 import { Booking, PaymentMethod } from '../types';
+import vnpayApi from '../api/vnpayApi';
+import { VnPayRequest } from '../types/vnpay';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -17,18 +19,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   userBalance,
   onPaymentSuccess
 }) => {
-  const [selectedMethod, setSelectedMethod] = useState<string>('wallet');
+  const [selectedMethod, setSelectedMethod] = useState<string>('qr_vnpay');
   const [showQR, setShowQR] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
 
   if (!isOpen) return null;
 
   const paymentMethods: PaymentMethod[] = [
-    { id: 'wallet', type: 'wallet', name: 'Ví CinemaBook', icon: '💳' },
-    { id: 'qr_momo', type: 'qr', name: 'MoMo QR', icon: '📱' },
+    // { id: 'wallet', type: 'wallet', name: 'Ví CinemaBook', icon: '💳' },
+    // { id: 'qr_momo', type: 'qr', name: 'MoMo QR', icon: '📱' },
     { id: 'qr_zalopay', type: 'qr', name: 'ZaloPay QR', icon: '💙' },
-    { id: 'qr_banking', type: 'qr', name: 'Banking QR', icon: '🏦' },
-    { id: 'card', type: 'card', name: 'Thẻ tín dụng/ghi nợ', icon: '💳' }
+    // { id: 'qr_banking', type: 'qr', name: 'Banking QR', icon: '🏦' },
+    // { id: 'card', type: 'card', name: 'Thẻ tín dụng/ghi nợ', icon: '💳' }
+    { id: 'qr_vnpay', type: 'qr', name: 'VNPay QR', icon: '💳' }
   ];
 
   const handlePayment = () => {
@@ -38,20 +41,31 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     }
 
     if (selectedMethod.startsWith('qr_')) {
-      setShowQR(true);
+      // setShowQR(true);
       // Simulate QR payment process
-      setTimeout(() => {
-        setShowQR(false);
-        setPaymentComplete(true);
-        setTimeout(() => {
-          onPaymentSuccess(selectedMethod);
-        }, 2000);
-      }, 3000);
-    } else {
-      setPaymentComplete(true);
-      setTimeout(() => {
-        onPaymentSuccess(selectedMethod);
-      }, 2000);
+      //   setTimeout(() => {
+      //     setShowQR(false);
+      //     setPaymentComplete(true);
+      //     setTimeout(() => {
+      //       onPaymentSuccess(selectedMethod);
+      //     }, 2000);
+      //   }, 3000);
+      // } else {
+      //   setPaymentComplete(true);
+      //   setTimeout(() => {
+      //     onPaymentSuccess(selectedMethod);
+      //   }, 2000);
+      if (selectedMethod === 'qr_vnpay') {
+        console.log(booking)
+        const params = {
+          vnp_Amount: booking.totalAmount, // VNPay expects amount in smallest currency unit
+          vnp_OrderInfo: `Thanh toán vé #${booking.id}`,
+          vnp_TxnRef: booking.id.toString(),
+        };
+        localStorage.setItem(`booking-${booking.id}`, JSON.stringify(booking));
+        vnpayApi.redirect(params);
+      }
+
     }
   };
 
@@ -75,7 +89,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           <div className="bg-white p-4 rounded-lg mb-6 mx-auto w-64 h-64 flex items-center justify-center">
             <QrCode className="h-48 w-48 text-gray-800" />
           </div>
-          <p className="text-gray-300 mb-4">Số tiền: ${booking.totalPrice.toFixed(2)}</p>
+          <p className="text-gray-300 mb-4">Số tiền: ${booking.totalAmount.toFixed(2)}</p>
           <p className="text-gray-400 text-sm">Đang chờ thanh toán...</p>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mt-4"></div>
         </div>
@@ -108,16 +122,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>Ghế đã chọn:</span>
-                <span className="text-white">{booking.seats.join(', ')}</span>
+                <span className="text-white">{booking.seatNumbers.join(', ')}</span>
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>Số lượng vé:</span>
-                <span className="text-white">{booking.seats.length} vé</span>
+                <span className="text-white">{booking.seatNumbers.length} vé</span>
               </div>
               <div className="border-t border-gray-600 pt-2 mt-2">
                 <div className="flex justify-between text-lg font-bold">
                   <span className="text-white">Tổng tiền:</span>
-                  <span className="text-red-400">${booking.totalPrice.toFixed(2)}</span>
+                  <span className="text-red-400">${booking.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -130,11 +144,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               {paymentMethods.map((method) => (
                 <label
                   key={method.id}
-                  className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedMethod === method.id
-                      ? 'border-red-500 bg-red-500/10'
-                      : 'border-gray-600 bg-gray-800 hover:border-gray-500'
-                  }`}
+                  className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedMethod === method.id
+                    ? 'border-red-500 bg-red-500/10'
+                    : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                    }`}
                 >
                   <input
                     type="radio"
@@ -170,7 +183,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-bold text-lg transition-colors flex items-center justify-center space-x-2"
           >
             <CreditCard className="h-5 w-5" />
-            <span>Thanh toán ${booking.totalPrice.toFixed(2)}</span>
+            <span>Thanh toán ${booking.totalAmount.toFixed(2)}</span>
           </button>
         </div>
       </div>

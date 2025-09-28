@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { X, User, Mail, Phone } from 'lucide-react';
-import { Movie, Showtime, Booking } from '../types/api';
+import { X, Mail, Phone } from 'lucide-react';
+import { Movie, Showtime, Booking, User } from '../types/api';
 import { Theater } from '../types/api';
 import { Seat } from '../types';
 
 interface BookingModalProps {
   movie: Movie;
   theater: Theater;
+  user: User | null;
   showtime: Showtime;
   onClose: () => void;
   onConfirmBooking: (booking: Booking) => void;
@@ -15,6 +16,7 @@ interface BookingModalProps {
 export const BookingModal: React.FC<BookingModalProps> = ({
   movie,
   showtime,
+  user,
   theater,
   onClose,
   onConfirmBooking
@@ -34,7 +36,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     rows.forEach((row, rowIndex) => {
       for (let seatNum = 1; seatNum <= 15; seatNum++) {
         const seatId = `${row}${seatNum}`;
-        const isAvailable = Math.random() > 0.3; // 70% seats available
+        const isAvailable = true; // 70% seats available
         const type = rowIndex < 2 ? 'premium' : rowIndex > 5 ? 'vip' : 'regular';
 
         seats.push({
@@ -76,19 +78,19 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   }, 0);
 
   const handleBooking = () => {
-    if (selectedSeats.length === 0 || !customerInfo.name || !customerInfo.email) {
+    if (selectedSeats.length === 0) {
       return;
     }
 
     const booking: Booking = {
       id: Date.now().toString(),
-      movieId: movie.id,
       showtimeId: showtime.id,
-      seats: selectedSeats,
-      totalPrice,
+      seatNumbers: selectedSeats,
+      totalAmount: totalPrice,
       bookingDate: new Date().toISOString(),
-      status: 'confirmed',
-      userEmail: customerInfo.email
+      bookingStatus: 'confirmed',
+      paymentStatus: 'pending',
+      userId: user ? user.id : '',
     };
 
     onConfirmBooking(booking);
@@ -153,15 +155,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <div className="flex justify-center space-x-6 mt-6 text-sm">
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 bg-gray-600 border border-gray-500 rounded"></div>
-                  <span className="text-gray-300">Thường (${showtime.price})</span>
+                  <span className="text-gray-300">Thường (${showtime.ticketPrice})</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 bg-yellow-600 border border-yellow-500 rounded"></div>
-                  <span className="text-gray-300">Premium (${(showtime.price * 1.5).toFixed(2)})</span>
+                  <span className="text-gray-300">Premium (${(showtime.ticketPrice * 1.5).toFixed(2)})</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 bg-purple-600 border border-purple-500 rounded"></div>
-                  <span className="text-gray-300">VIP (${(showtime.price * 2).toFixed(2)})</span>
+                  <span className="text-gray-300">VIP (${(showtime.ticketPrice * 2).toFixed(2)})</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 bg-red-500 border border-red-400 rounded"></div>
@@ -175,7 +177,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
 
             {/* Customer Info & Summary */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
               {/* Customer Info */}
               {/* <div>
                 <h3 className="text-xl font-bold text-white mb-4">Thông tin khách hàng</h3>
@@ -254,7 +256,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
                 <button
                   onClick={handleBooking}
-                  disabled={selectedSeats.length === 0 || !customerInfo.name || !customerInfo.email}
+                  disabled={selectedSeats.length === 0}
                   className="w-full mt-6 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-bold text-lg transition-colors"
                 >
                   Tiếp tục thanh toán

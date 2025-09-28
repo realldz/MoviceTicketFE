@@ -31,6 +31,10 @@ export const useMovieData = () => {
     getMovie();
   }, []);
 
+  useEffect(() => {
+    console.log(bookings);
+  }, [bookings]);
+
   const login = async (email: string, password: string): Promise<{ error: string | null }> => {
     try {
       const response = await authApi.login({ email, password });
@@ -103,14 +107,17 @@ export const useMovieData = () => {
   };
 
   const addBooking = (booking: Booking) => {
-    const newBookings = [...bookings, booking];
-    setBookings(newBookings);
-    localStorage.setItem('movieBookings', JSON.stringify(newBookings));
+    console.log('Booking added:', booking);
+    setBookings(prevBookings => {
+      const newBookings = [...prevBookings, booking];
+      localStorage.setItem('movieBookings', JSON.stringify(newBookings));
+      return newBookings;
+    });
 
     // Update showtime availability
     setShowtimes(prev => prev.map(showtime =>
       showtime.id === booking.showtimeId
-        ? { ...showtime, availableSeats: showtime.availableSeats - booking.seats.length }
+        ? { ...showtime, availableSeats: showtime.availableSeats - booking.seatNumbers.length }
         : showtime
     ));
   };

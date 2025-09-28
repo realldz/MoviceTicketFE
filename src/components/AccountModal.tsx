@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, Wallet, CreditCard, History, Settings, Plus } from 'lucide-react';
-import { User as UserType, Booking } from '../types';
+import { User as UserType, Booking } from '../types/api';
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -72,8 +72,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeTab === tab.id
-                        ? 'bg-red-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-700'
+                      ? 'bg-red-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-700'
                       }`}
                   >
                     <Icon className="h-5 w-5" />
@@ -176,15 +176,15 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       <div key={booking.id} className="bg-gray-800 p-4 rounded-lg">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="text-white font-semibold">Booking #{booking.id}</h4>
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${booking.status === 'confirmed'
-                              ? 'bg-green-600 text-white'
-                              : 'bg-red-600 text-white'
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${booking.bookingStatus === 'confirmed'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-red-600 text-white'
                             }`}>
-                            {booking.status === 'confirmed' ? 'Đã xác nhận' : 'Đã hủy'}
+                            {booking.bookingStatus === 'confirmed' ? 'Đã xác nhận' : 'Đã hủy'}
                           </span>
                         </div>
-                        <p className="text-gray-300 text-sm">Ghế: {booking.seats.join(', ')}</p>
-                        <p className="text-gray-300 text-sm">Tổng tiền: ${booking.totalPrice.toFixed(2)}</p>
+                        <p className="text-gray-300 text-sm">Ghế: {booking.seatNumbers.join(', ')}</p>
+                        <p className="text-gray-300 text-sm">Tổng tiền: ${booking.totalAmount.toFixed(2)}</p>
                         <p className="text-gray-400 text-xs">
                           {new Date(booking.bookingDate).toLocaleDateString('vi-VN')}
                         </p>
